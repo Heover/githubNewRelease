@@ -2,9 +2,8 @@ name: GitHub Release 每日监控
 
 on:
   schedule:
-    # 每天北京时间 08:00 和 20:00 (UTC+8) 各执行一次
-    # UTC 00:00 = 北京 08:00, UTC 12:00 = 北京 20:00
-    - cron: "0 0,12 * * *"
+    # 每天北京时间 00:07 (UTC+8) => UTC 16:07
+    - cron: "7 16 * * *"
   workflow_dispatch:  # 允许手动触发
   push:
     paths:

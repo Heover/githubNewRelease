@@ -19,11 +19,10 @@
 | 凭证 | 说明 | 获取方式 |
 |------|------|----------|
 | `GITHUB_USER` | 要监控的 GitHub 用户名 | 你的 GitHub 用户名 |
-| `GITHUB_TOKEN` | GitHub Personal Access Token **（强烈建议）** | [GitHub Settings → Developer settings → Tokens](https://github.com/settings/tokens) 创建 classic token，无需勾选任何权限 |
 | `SERVER_UID` | Server 酱3 用户 UID | [Server 酱3](https://sc3.ft07.com/sendkey) 登录后在 SendKey 页面获取 |
 | `SERVER_KEY` | Server 酱3 SendKey | [Server 酱3](https://sc3.ft07.com/sendkey) 登录后在 SendKey 页面获取 |
 
-> ⚠️ **GITHUB_TOKEN 说明**：不配置 Token 也可以运行，但 GitHub API 匿名访问限制为 **60 次/小时**。如果 star 仓库超过 60 个，必须配置 Token（认证后 **5000 次/小时**）。Token 不需要勾选任何权限 scope，仅用于提高速率限制。
+> 💡 `GITHUB_TOKEN` 使用 GitHub Actions 内置的 `secrets.GITHUB_TOKEN`，**无需手动配置**。
 
 ### 2. 配置 GitHub Secrets
 
@@ -31,7 +30,6 @@
 
 ```
 GITHUB_USER         = 你的GitHub用户名
-GITHUB_TOKEN        = ghp_xxxxxxxxxxxxxxxx（强烈建议）
 SERVER_UID          = 你的uid
 SERVER_KEY          = 你的sendkey
 ```

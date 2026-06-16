@@ -1,0 +1,13 @@
+{
+  "name": "github-new-release-monitor",
+  "version": "1.0.0",
+  "description": "GitHub Star 仓库 Release 监控 - 通过 GitHub Action 每日检查 star 仓库的新 Release 并推送到手机",
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/check_releases.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

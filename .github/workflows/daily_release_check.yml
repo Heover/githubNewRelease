@@ -1,0 +1,34 @@
+name: GitHub Release 每日监控
+
+on:
+  schedule:
+    # 每天北京时间 08:00 和 20:00 (UTC+8) 各执行一次
+    # UTC 00:00 = 北京 08:00, UTC 12:00 = 北京 20:00
+    - cron: "0 0,12 * * *"
+  workflow_dispatch:  # 允许手动触发
+  push:
+    paths:
+      - "scripts/check_releases.mjs"
+      - ".github/workflows/daily_release_check.yml"
+
+jobs:
+  check-releases:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 扫描新 Release 并通知
+        env:
+          GITHUB_USER: ${{ secrets.GITHUB_USER }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SERVER_UID: ${{ secrets.SERVER_UID }}
+          SERVER_KEY: ${{ secrets.SERVER_KEY }}
+        run: node scripts/check_releases.mjs

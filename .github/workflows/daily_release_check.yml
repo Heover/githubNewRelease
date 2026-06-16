@@ -27,7 +27,7 @@ jobs:
 
       - name: 扫描新 Release 并通知
         env:
-          GITHUB_USER: ${{ secrets.GITHUB_USER || github.repository_owner }}
+          GITHUB_USER: ${{ secrets.GITHUB_USER }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SERVER_UID: ${{ secrets.SERVER_UID }}
           SERVER_KEY: ${{ secrets.SERVER_KEY }}

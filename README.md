@@ -18,22 +18,21 @@
 
 | 凭证 | 说明 | 获取方式 |
 |------|------|----------|
-| `GITHUB_USER`（可选） | 要监控的 GitHub 用户名，默认使用当前仓库所属用户 | 你的 GitHub 用户名 |
+| `GITHUB_USER` | 要监控的 GitHub **个人**用户名（组织仓库必须配置） | 你的 GitHub 用户名 |
 | `SERVER_UID` | Server 酱3 用户 UID | [Server 酱3](https://sc3.ft07.com/sendkey) 登录后在 SendKey 页面获取 |
 | `SERVER_KEY` | Server 酱3 SendKey | [Server 酱3](https://sc3.ft07.com/sendkey) 登录后在 SendKey 页面获取 |
 
-> 💡 `GITHUB_TOKEN` 自动使用内置 `secrets.GITHUB_TOKEN`，`GITHUB_USER` 默认取仓库所属用户，**均无需手动配置**。
+> 💡 `GITHUB_TOKEN` 自动使用内置 `secrets.GITHUB_TOKEN`，无需手动配置。当前仓库属于组织 `Heover`，`GITHUB_USER` **必须配置**为个人用户名。
 
 ### 2. 配置 GitHub Secrets
 
 在 GitHub 仓库的 **Settings → Secrets and variables → Actions → New repository secret** 中添加：
 
 ```
+GITHUB_USER         = 你的个人GitHub用户名
 SERVER_UID          = 你的uid
 SERVER_KEY          = 你的sendkey
 ```
-
-> `GITHUB_USER` 可选，不配置则默认监控当前仓库所属用户（如 `Heover`）。如需监控其他用户，添加 `GITHUB_USER = 用户名`。
 
 ### 3. 推送代码到 GitHub
 

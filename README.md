@@ -18,18 +18,25 @@
 
 | 凭证 | 说明 | 获取方式 |
 |------|------|----------|
-| `GITHUB_USER` | 要监控的 GitHub **个人**用户名（组织仓库必须配置） | 你的 GitHub 用户名 |
+| `GITHUB_USER` | 要监控的 GitHub **个人**用户名 | Variables 标签页配置 |
 | `SERVER_UID` | Server 酱3 用户 UID | [Server 酱3](https://sc3.ft07.com/sendkey) 登录后在 SendKey 页面获取 |
 | `SERVER_KEY` | Server 酱3 SendKey | [Server 酱3](https://sc3.ft07.com/sendkey) 登录后在 SendKey 页面获取 |
 
-> 💡 `GITHUB_TOKEN` 自动使用内置 `secrets.GITHUB_TOKEN`，无需手动配置。当前仓库属于组织 `Heover`，`GITHUB_USER` **必须配置**为个人用户名。
+> 💡 `GITHUB_TOKEN` 自动使用内置 `secrets.GITHUB_TOKEN`，无需手动配置。`GITHUB_USER` 使用 Variables 而非 Secrets（避免保留前缀冲突），在仓库 **Settings → Secrets and variables → Actions → Variables** 中配置。
 
-### 2. 配置 GitHub Secrets
+### 2. 配置 GitHub Secrets 和 Variables
 
-在 GitHub 仓库的 **Settings → Secrets and variables → Actions → New repository secret** 中添加：
+在仓库 **Settings → Secrets and variables → Actions** 中：
+
+**Variables** 标签页添加：
 
 ```
 GITHUB_USER         = 你的个人GitHub用户名
+```
+
+**Secrets** 标签页添加：
+
+```
 SERVER_UID          = 你的uid
 SERVER_KEY          = 你的sendkey
 ```

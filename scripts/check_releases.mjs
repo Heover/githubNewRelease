@@ -5,7 +5,7 @@
  * 通知方式：Server 酱3（手机 App）
  *
  * 需要设置以下 GitHub Secrets / 环境变量：
- *   - GITHUB_USER: 要监控的 GitHub 用户名
+ *   - MONITOR_USER: 要监控的 GitHub 用户名
  *   - GITHUB_TOKEN: GitHub Personal Access Token（可选，提高 API 速率限制）
  *   - SERVER_UID: Server 酱3 用户 UID（从 https://sc3.ft07.com/sendkey 获取）
  *   - SERVER_KEY: Server 酱3 SendKey（从 https://sc3.ft07.com/sendkey 获取）
@@ -17,11 +17,11 @@
 // 配置
 // ============================================================
 
-const GITHUB_USER = process.env.GITHUB_USER || "";
+const MONITOR_USER = process.env.MONITOR_USER || "";
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
 
 const GITHUB_API_BASE = "https://api.github.com";
-const GITHUB_STARRED_URL = `${GITHUB_API_BASE}/users/${GITHUB_USER}/starred`;
+const GITHUB_STARRED_URL = `${GITHUB_API_BASE}/users/${MONITOR_USER}/starred`;
 
 const CHECK_WINDOW_HOURS = 48;
 const PER_PAGE = 100;
@@ -65,8 +65,8 @@ async function safeFetch(url, options = {}) {
 
 /** 获取指定用户 star 的所有仓库 */
 async function fetchStarredRepos() {
-  if (!GITHUB_USER) {
-    console.log("  ❌ 未设置 GITHUB_USER 环境变量");
+  if (!MONITOR_USER) {
+    console.log("  ❌ 未设置 MONITOR_USER 环境变量");
     return [];
   }
 
@@ -88,7 +88,7 @@ async function fetchStarredRepos() {
       break;
     }
     if (resp.status === 404) {
-      console.log(`  ❌ 用户 ${GITHUB_USER} 不存在`);
+      console.log(`  ❌ 用户 ${MONITOR_USER} 不存在`);
       break;
     }
     if (!resp.ok) {
@@ -214,7 +214,7 @@ function formatReleaseMessage(result) {
   if (result.error) {
     return (
       `⚠️ GitHub Release 监控异常\n` +
-      `用户: ${GITHUB_USER}\n` +
+      `用户: ${MONITOR_USER}\n` +
       `原因: ${result.error}`
     );
   }
@@ -227,14 +227,14 @@ function formatReleaseMessage(result) {
   if (newReleases.length === 0) {
     return (
       `📭 ${checkedAt}\n` +
-      `用户 ${GITHUB_USER} star 的 ${totalStarred} 个仓库\n` +
+      `用户 ${MONITOR_USER} star 的 ${totalStarred} 个仓库\n` +
       `过去 ${windowHours} 小时内无新 Release`
     );
   }
 
   const lines = [
     `🚀 新 Release 通知 — ${checkedAt}`,
-    `用户: ${GITHUB_USER} | 监控: ${totalStarred} 个仓库 | 窗口: ${windowHours}h`,
+    `用户: ${MONITOR_USER} | 监控: ${totalStarred} 个仓库 | 窗口: ${windowHours}h`,
     `共发现 ${newReleases.length} 个新 Release:\n`,
   ];
 
@@ -296,12 +296,12 @@ async function main() {
   console.log("GitHub Star 仓库 Release 监控");
   console.log("=".repeat(55));
 
-  if (!GITHUB_USER) {
-    console.log("\n❌ 未设置 GITHUB_USER，请在 GitHub Secrets 中配置");
+  if (!MONITOR_USER) {
+    console.log("\n❌ 未设置 MONITOR_USER，请在 GitHub Variables 中配置");
     process.exit(1);
   }
 
-  console.log(`\n👤 监控用户: ${GITHUB_USER}`);
+  console.log(`\n👤 监控用户: ${MONITOR_USER}`);
   console.log(`⏱️  时间窗口: ${CHECK_WINDOW_HOURS} 小时`);
   if (GITHUB_TOKEN) {
     console.log("🔑 已配置 GitHub Token");

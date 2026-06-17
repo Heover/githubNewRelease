@@ -9,14 +9,11 @@ on:
     paths:
       - "scripts/check_releases.mjs"
       - ".github/workflows/daily_release_check.yml"
-      - "last_check.txt"
 
 jobs:
   check-releases:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      contents: write
 
     steps:
       - name: 检出代码
@@ -27,19 +24,15 @@ jobs:
         with:
           node-version: "20"
 
+      - name: 安装依赖
+        run: npm install
+
       - name: 扫描新 Release 并通知
         env:
           MONITOR_USER: ${{ vars.MONITOR_USER }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
           SERVER_UID: ${{ secrets.SERVER_UID }}
           SERVER_KEY: ${{ secrets.SERVER_KEY }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: node scripts/check_releases.mjs
-
-      - name: 提交检查时间
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add last_check.txt
-          git diff --staged --quiet || git commit -m "chore: 更新检查时间"
-          git push

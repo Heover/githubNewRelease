@@ -1,11 +1,13 @@
 /**
  * GitHub Star 仓库 新 Release 监控 + 手机通知工具
  * 通过 GitHub Action 每日定时执行，只通知上次检查后新增的 Release。
+ * 使用 MongoDB 存储上次检查时间（不产生额外 git 提交）。
  *
  * 通知方式：Server 酱3（手机 App）
  *
  * 需要设置以下环境变量：
  *   - MONITOR_USER: 要监控的 GitHub 用户名
+ *   - MONGODB_URI: MongoDB 连接字符串
  *   - GITHUB_TOKEN: GitHub Personal Access Token（可选，提高 API 速率限制）
  *   - SERVER_UID: Server 酱3 用户 UID（从 https://sc3.ft07.com/sendkey 获取）
  *   - SERVER_KEY: Server 酱3 SendKey（从 https://sc3.ft07.com/sendkey 获取）
@@ -13,7 +15,7 @@
  * 要求 Node.js >= 18（原生 fetch 支持）
  */
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { MongoClient } from "mongodb";
 
 // ============================================================
 // 配置
@@ -21,46 +23,69 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 
 const MONITOR_USER = process.env.MONITOR_USER || "";
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
+const MONGODB_URI = process.env.MONGODB_URI || "";
 
 const GITHUB_API_BASE = "https://api.github.com";
 const GITHUB_STARRED_URL = `${GITHUB_API_BASE}/users/${MONITOR_USER}/starred`;
 
-/** 首次运行回退窗口（小时），仅在无 last_check.txt 时使用 */
+/** 首次运行回退窗口（小时），仅在 MongoDB 无记录时使用 */
 const FALLBACK_WINDOW_HOURS = 48;
 const PER_PAGE = 100;
 
-/** 额外监控的高活跃仓库（确保测试时至少有一条通知） */
-const WATCH_REPOS = [
-  { owner: "facebook", repo: "react" },
-];
-
-/** 记录上次检查时间的文件 */
-const LAST_CHECK_FILE = "last_check.txt";
+const DB_NAME = "release_monitor";
+const COLL_NAME = "check_state";
+const DOC_KEY = "last_check";
 
 // ============================================================
-// 上次检查时间
+// MongoDB 上次检查时间
 // ============================================================
 
-/** 读取上次检查时间（UTC ISO 字符串），若不存在则回退到 48h 前 */
-function getLastCheckTime() {
-  if (existsSync(LAST_CHECK_FILE)) {
-    const content = readFileSync(LAST_CHECK_FILE, "utf-8").trim();
-    if (content) {
-      const time = new Date(content);
+let mongoClient = null;
+
+async function getMongoCollection() {
+  if (!MONGODB_URI) {
+    throw new Error("未设置 MONGODB_URI 环境变量");
+  }
+  if (!mongoClient) {
+    mongoClient = new MongoClient(MONGODB_URI);
+    await mongoClient.connect();
+  }
+  return mongoClient.db(DB_NAME).collection(COLL_NAME);
+}
+
+/** 从 MongoDB 读取上次检查时间，若无记录则回退到 48h 前 */
+async function getLastCheckTime() {
+  try {
+    const coll = await getMongoCollection();
+    const doc = await coll.findOne({ _id: DOC_KEY });
+    if (doc?.time) {
+      const time = new Date(doc.time);
       if (!isNaN(time.getTime())) {
-        console.log(`  📅 上次检查: ${beijingTimeStr(time)}`);
+        console.log(`  📅 上次检查(DB): ${beijingTimeStr(time)}`);
         return time;
       }
     }
+  } catch (e) {
+    console.log(`  ⚠️  MongoDB 读取失败: ${e.message}`);
   }
   const fallback = new Date(Date.now() - FALLBACK_WINDOW_HOURS * 60 * 60 * 1000);
   console.log(`  🆕 首次运行，回退至 ${FALLBACK_WINDOW_HOURS}h 前: ${beijingTimeStr(fallback)}`);
   return fallback;
 }
 
-/** 保存当前 UTC 时间作为下次检查基准 */
-function saveLastCheckTime() {
-  writeFileSync(LAST_CHECK_FILE, new Date().toISOString(), "utf-8");
+/** 保存当前 UTC 时间到 MongoDB */
+async function saveLastCheckTime() {
+  try {
+    const coll = await getMongoCollection();
+    await coll.updateOne(
+      { _id: DOC_KEY },
+      { $set: { time: new Date().toISOString(), user: MONITOR_USER, updatedAt: new Date() } },
+      { upsert: true }
+    );
+    console.log("  💾 检查时间已保存到 MongoDB");
+  } catch (e) {
+    console.log(`  ⚠️  MongoDB 保存失败: ${e.message}`);
+  }
 }
 
 /** 构建 GitHub API 请求头 */
@@ -242,22 +267,47 @@ async function checkAllStarredReleases(cutoff) {
     await checkRepoReleases(owner, name, fullName, repo.html_url || "", cutoff, allNewReleases, idx + 1, total);
   }
 
-  // 仅在 push 触发时额外检查高活跃仓库（保证测试时有通知）
+  // push 触发时若无新增，取所有 star 仓库中最新的一条 release 作为测试展示
   const isPush = process.env.GITHUB_EVENT_NAME === "push";
-  if (isPush) {
-    console.log("\n  🔍 push 触发，额外检查高活跃仓库...");
-    const watchTotal = WATCH_REPOS.length;
-    for (let i = 0; i < WATCH_REPOS.length; i++) {
-      const w = WATCH_REPOS[i];
-      await checkRepoReleases(w.owner, w.repo, `${w.owner}/${w.repo}`, "", cutoff, allNewReleases, i + 1, watchTotal);
+  let testLatest = null;
+  if (isPush && allNewReleases.length === 0) {
+    console.log("\n  🧪 push 触发且无新增，查找 star 仓库中最新的 release...");
+    let newestTime = new Date(0);
+    let newestRel = null;
+    for (let idx = 0; idx < repos.length; idx++) {
+      const repo = repos[idx];
+      const owner = repo.owner?.login || "";
+      const name = repo.name || "";
+      if (!owner || !name) continue;
+      const recent = await fetchRecentReleases(owner, name, new Date(0));
+      if (recent.length > 0) {
+        const t = new Date(recent[0].published_at);
+        if (t > newestTime) {
+          newestTime = t;
+          newestRel = {
+            repo: repo.full_name,
+            repoUrl: repo.html_url || "",
+            tag: recent[0].tag_name || "",
+            name: recent[0].name || recent[0].tag_name || "",
+            url: recent[0].html_url || "",
+            publishedAt: recent[0].published_at || "",
+            body: (recent[0].body || "").slice(0, 200),
+          };
+        }
+      }
+    }
+    if (newestRel) {
+      testLatest = newestRel;
+      allNewReleases.push(newestRel);
     }
   }
 
   return {
     success: true,
     newReleases: allNewReleases,
-    totalStarred: total + (isPush ? WATCH_REPOS.length : 0),
+    totalStarred: total,
     checkedAt: beijingTimeStr(),
+    isPushTest: isPush && !!testLatest,
   };
 }
 
@@ -277,6 +327,7 @@ function formatReleaseMessage(result) {
   const newReleases = result.newReleases || [];
   const totalStarred = result.totalStarred || 0;
   const checkedAt = result.checkedAt || "";
+  const isPushTest = result.isPushTest || false;
 
   if (newReleases.length === 0) {
     return (
@@ -297,7 +348,8 @@ function formatReleaseMessage(result) {
   });
 
   // 末尾补充摘要
-  items.push(`\n📊 上次检查后新增 ${newReleases.length} 个 Release | ${MONITOR_USER} | 监控 ${totalStarred} 个仓库 | ${checkedAt}`);
+  const tag = isPushTest ? "🧪 测试模式 — star 仓库最新 Release" : `上次检查后新增 ${newReleases.length} 个 Release`;
+  items.push(`\n📊 ${tag} | ${MONITOR_USER} | 监控 ${totalStarred} 个仓库 | ${checkedAt}`);
 
   return items.join("\n\n");
 }
@@ -372,14 +424,14 @@ async function main() {
   }
 
   // 读取上次检查时间
-  const cutoff = getLastCheckTime();
+  const cutoff = await getLastCheckTime();
 
   // 1. 检查 Release
   console.log("\n[1/3] 正在扫描上次检查后新增的 Release...");
   const checkResult = await checkAllStarredReleases(cutoff);
 
   // 保存本次时间
-  saveLastCheckTime();
+  await saveLastCheckTime();
 
   // 2. 格式化消息
   console.log("\n[2/3] 正在格式化消息...");

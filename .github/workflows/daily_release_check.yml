@@ -33,6 +33,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SERVER_UID: ${{ secrets.SERVER_UID }}
           SERVER_KEY: ${{ secrets.SERVER_KEY }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: node scripts/check_releases.mjs
 
       - name: 提交检查时间

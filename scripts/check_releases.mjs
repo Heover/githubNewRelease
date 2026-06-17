@@ -242,18 +242,21 @@ async function checkAllStarredReleases(cutoff) {
     await checkRepoReleases(owner, name, fullName, repo.html_url || "", cutoff, allNewReleases, idx + 1, total);
   }
 
-  // 额外检查高活跃仓库
-  console.log("\n  🔍 额外检查高活跃仓库...");
-  const watchTotal = WATCH_REPOS.length;
-  for (let i = 0; i < WATCH_REPOS.length; i++) {
-    const w = WATCH_REPOS[i];
-    await checkRepoReleases(w.owner, w.repo, `${w.owner}/${w.repo}`, "", cutoff, allNewReleases, i + 1, watchTotal);
+  // 仅在 push 触发时额外检查高活跃仓库（保证测试时有通知）
+  const isPush = process.env.GITHUB_EVENT_NAME === "push";
+  if (isPush) {
+    console.log("\n  🔍 push 触发，额外检查高活跃仓库...");
+    const watchTotal = WATCH_REPOS.length;
+    for (let i = 0; i < WATCH_REPOS.length; i++) {
+      const w = WATCH_REPOS[i];
+      await checkRepoReleases(w.owner, w.repo, `${w.owner}/${w.repo}`, "", cutoff, allNewReleases, i + 1, watchTotal);
+    }
   }
 
   return {
     success: true,
     newReleases: allNewReleases,
-    totalStarred: total + WATCH_REPOS.length,
+    totalStarred: total + (isPush ? WATCH_REPOS.length : 0),
     checkedAt: beijingTimeStr(),
   };
 }

@@ -32,8 +32,8 @@ const GITHUB_STARRED_URL = `${GITHUB_API_BASE}/users/${MONITOR_USER}/starred`;
 const FALLBACK_WINDOW_HOURS = 48;
 const PER_PAGE = 100;
 
-const DB_NAME = "release_monitor";
-const COLL_NAME = "check_state";
+const DB_NAME = "github";
+const COLL_NAME = "parameter";
 const DOC_KEY = "last_check";
 
 // ============================================================

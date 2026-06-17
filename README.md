@@ -62,12 +62,12 @@ git push -u origin main
 1. torvalds/linux
    🏷️ v6.12 — Linux Kernel 6.12
    🔗 https://github.com/torvalds/linux/releases/tag/v6.12
-   🕐 2026-06-16T18:30:00Z
+   🕐 2026-06-17 02:30:00
 
 2. facebook/react
    🏷️ v19.2.0 — React 19.2.0
    🔗 https://github.com/facebook/react/releases/tag/v19.2.0
-   🕐 2026-06-16T12:15:00Z
+   🕐 2026-06-16 20:15:00
 
 📊 上次检查后新增 2 个 Release | example-user | 监控 42 个仓库 | 2026-06-17 00:07:00
 ```

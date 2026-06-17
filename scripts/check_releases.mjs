@@ -29,6 +29,11 @@ const GITHUB_STARRED_URL = `${GITHUB_API_BASE}/users/${MONITOR_USER}/starred`;
 const FALLBACK_WINDOW_HOURS = 48;
 const PER_PAGE = 100;
 
+/** 额外监控的高活跃仓库（确保测试时至少有一条通知） */
+const WATCH_REPOS = [
+  { owner: "facebook", repo: "react" },
+];
+
 /** 记录上次检查时间的文件 */
 const LAST_CHECK_FILE = "last_check.txt";
 
@@ -191,6 +196,30 @@ async function fetchRecentReleases(owner, repo, cutoff) {
   return recent;
 }
 
+/** 检查单个仓库的 Release 并收集结果 */
+async function checkRepoReleases(owner, name, fullName, repoUrl, cutoff, allNewReleases, idx, total) {
+  process.stdout.write(`  [${idx}/${total}] 检查 ${fullName}... `);
+
+  const recent = await fetchRecentReleases(owner, name, cutoff);
+
+  if (recent.length > 0) {
+    console.log(`✨ ${recent.length} 个新 Release`);
+    for (const rel of recent) {
+      allNewReleases.push({
+        repo: fullName,
+        repoUrl: repoUrl || `https://github.com/${owner}/${name}`,
+        tag: rel.tag_name || "",
+        name: rel.name || rel.tag_name || "",
+        url: rel.html_url || "",
+        publishedAt: rel.published_at || "",
+        body: (rel.body || "").slice(0, 200),
+      });
+    }
+  } else {
+    console.log("—");
+  }
+}
+
 /** 检查所有 star 仓库在 cutoff 之后的 release */
 async function checkAllStarredReleases(cutoff) {
 
@@ -210,32 +239,21 @@ async function checkAllStarredReleases(cutoff) {
 
     if (!owner || !name) continue;
 
-    process.stdout.write(`  [${idx + 1}/${total}] 检查 ${fullName}... `);
+    await checkRepoReleases(owner, name, fullName, repo.html_url || "", cutoff, allNewReleases, idx + 1, total);
+  }
 
-    const recent = await fetchRecentReleases(owner, name, cutoff);
-
-    if (recent.length > 0) {
-      console.log(`✨ ${recent.length} 个新 Release`);
-      for (const rel of recent) {
-        allNewReleases.push({
-          repo: fullName,
-          repoUrl: repo.html_url || "",
-          tag: rel.tag_name || "",
-          name: rel.name || rel.tag_name || "",
-          url: rel.html_url || "",
-          publishedAt: rel.published_at || "",
-          body: (rel.body || "").slice(0, 200),
-        });
-      }
-    } else {
-      console.log("—");
-    }
+  // 额外检查高活跃仓库
+  console.log("\n  🔍 额外检查高活跃仓库...");
+  const watchTotal = WATCH_REPOS.length;
+  for (let i = 0; i < WATCH_REPOS.length; i++) {
+    const w = WATCH_REPOS[i];
+    await checkRepoReleases(w.owner, w.repo, `${w.owner}/${w.repo}`, "", cutoff, allNewReleases, i + 1, watchTotal);
   }
 
   return {
     success: true,
     newReleases: allNewReleases,
-    totalStarred: total,
+    totalStarred: total + WATCH_REPOS.length,
     checkedAt: beijingTimeStr(),
   };
 }
@@ -292,19 +310,29 @@ async function sendServerchanMessage(title, message) {
     return { error: "未设置 SERVER_UID 或 SERVER_KEY" };
   }
 
+  const url = `https://${uid}.push.ft07.com/send/${sendkey}.send`;
+  console.log(`  📤 请求URL: ${url}`);
+  console.log(`  📝 标题: ${title}`);
+  console.log(`  📄 内容预览:\n${message.slice(0, 500)}...`);
+
   try {
-    const resp = await safeFetch(`https://${uid}.push.ft07.com/send/${sendkey}.send`, {
+    const resp = await safeFetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({ title, desp: message }),
       timeout: 15000,
     });
 
+    console.log(`  📡 HTTP状态: ${resp.status}`);
+
     if (!resp.ok) {
+      const body = await resp.text();
+      console.log(`  ❌ 响应体: ${body}`);
       return { error: `Server酱3 HTTP ${resp.status}` };
     }
 
     const result = await resp.json();
+    console.log(`  📥 响应: ${JSON.stringify(result)}`);
 
     if (result.code === 0) {
       return { success: true, data: result };

@@ -1,10 +1,10 @@
 /**
  * GitHub Star 仓库 新 Release 监控 + 手机通知工具
- * 通过 GitHub Action 每日定时执行，检查指定用户 star 的仓库在 48 小时内是否有新 Release。
+ * 通过 GitHub Action 每日定时执行，只通知上次检查后新增的 Release。
  *
  * 通知方式：Server 酱3（手机 App）
  *
- * 需要设置以下 GitHub Secrets / 环境变量：
+ * 需要设置以下环境变量：
  *   - MONITOR_USER: 要监控的 GitHub 用户名
  *   - GITHUB_TOKEN: GitHub Personal Access Token（可选，提高 API 速率限制）
  *   - SERVER_UID: Server 酱3 用户 UID（从 https://sc3.ft07.com/sendkey 获取）
@@ -12,6 +12,8 @@
  *
  * 要求 Node.js >= 18（原生 fetch 支持）
  */
+
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
 
 // ============================================================
 // 配置
@@ -23,12 +25,38 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
 const GITHUB_API_BASE = "https://api.github.com";
 const GITHUB_STARRED_URL = `${GITHUB_API_BASE}/users/${MONITOR_USER}/starred`;
 
-const CHECK_WINDOW_HOURS = 48;
+/** 首次运行回退窗口（小时），仅在无 last_check.txt 时使用 */
+const FALLBACK_WINDOW_HOURS = 48;
 const PER_PAGE = 100;
 
+/** 记录上次检查时间的文件 */
+const LAST_CHECK_FILE = "last_check.txt";
+
 // ============================================================
-// 工具函数
+// 上次检查时间
 // ============================================================
+
+/** 读取上次检查时间（UTC ISO 字符串），若不存在则回退到 48h 前 */
+function getLastCheckTime() {
+  if (existsSync(LAST_CHECK_FILE)) {
+    const content = readFileSync(LAST_CHECK_FILE, "utf-8").trim();
+    if (content) {
+      const time = new Date(content);
+      if (!isNaN(time.getTime())) {
+        console.log(`  📅 上次检查: ${beijingTimeStr(time)}`);
+        return time;
+      }
+    }
+  }
+  const fallback = new Date(Date.now() - FALLBACK_WINDOW_HOURS * 60 * 60 * 1000);
+  console.log(`  🆕 首次运行，回退至 ${FALLBACK_WINDOW_HOURS}h 前: ${beijingTimeStr(fallback)}`);
+  return fallback;
+}
+
+/** 保存当前 UTC 时间作为下次检查基准 */
+function saveLastCheckTime() {
+  writeFileSync(LAST_CHECK_FILE, new Date().toISOString(), "utf-8");
+}
 
 /** 构建 GitHub API 请求头 */
 function getGitHubHeaders() {
@@ -155,9 +183,8 @@ async function fetchRecentReleases(owner, repo, cutoff) {
   return recent;
 }
 
-/** 检查所有 star 仓库的最近 release */
-async function checkAllStarredReleases() {
-  const cutoff = new Date(Date.now() - CHECK_WINDOW_HOURS * 60 * 60 * 1000);
+/** 检查所有 star 仓库在 cutoff 之后的 release */
+async function checkAllStarredReleases(cutoff) {
 
   const repos = await fetchStarredRepos();
   if (!repos || repos.length === 0) {
@@ -202,7 +229,6 @@ async function checkAllStarredReleases() {
     newReleases: allNewReleases,
     totalStarred: total,
     checkedAt: beijingTimeStr(),
-    windowHours: CHECK_WINDOW_HOURS,
   };
 }
 
@@ -222,20 +248,18 @@ function formatReleaseMessage(result) {
   const newReleases = result.newReleases || [];
   const totalStarred = result.totalStarred || 0;
   const checkedAt = result.checkedAt || "";
-  const windowHours = result.windowHours || CHECK_WINDOW_HOURS;
 
   if (newReleases.length === 0) {
     return (
       `📭 ${checkedAt}\n` +
-      `用户 ${MONITOR_USER} star 的 ${totalStarred} 个仓库\n` +
-      `过去 ${windowHours} 小时内无新 Release`
+      `用户 ${MONITOR_USER} star 的 ${totalStarred} 个仓库无新增 Release`
     );
   }
 
   const lines = [
     `🚀 新 Release 通知 — ${checkedAt}`,
-    `用户: ${MONITOR_USER} | 监控: ${totalStarred} 个仓库 | 窗口: ${windowHours}h`,
-    `共发现 ${newReleases.length} 个新 Release:\n`,
+    `用户: ${MONITOR_USER} | 监控: ${totalStarred} 个仓库`,
+    `上次检查后新增 ${newReleases.length} 个 Release:\n`,
   ];
 
   newReleases.forEach((rel, i) => {
@@ -302,16 +326,21 @@ async function main() {
   }
 
   console.log(`\n👤 监控用户: ${MONITOR_USER}`);
-  console.log(`⏱️  时间窗口: ${CHECK_WINDOW_HOURS} 小时`);
   if (GITHUB_TOKEN) {
     console.log("🔑 已配置 GitHub Token");
   } else {
     console.log("⚠️  未配置 GitHub Token（API 速率限制较低）");
   }
 
+  // 读取上次检查时间
+  const cutoff = getLastCheckTime();
+
   // 1. 检查 Release
-  console.log("\n[1/3] 正在扫描 star 仓库的新 Release...");
-  const checkResult = await checkAllStarredReleases();
+  console.log("\n[1/3] 正在扫描上次检查后新增的 Release...");
+  const checkResult = await checkAllStarredReleases(cutoff);
+
+  // 保存本次时间
+  saveLastCheckTime();
 
   // 2. 格式化消息
   console.log("\n[2/3] 正在格式化消息...");

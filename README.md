@@ -1,8 +1,8 @@
 # GitHub Star 仓库 Release 监控 + 手机通知
 
-通过 GitHub Action 每日自动检查指定用户 star 的仓库在 **48 小时**内是否有新 Release，通过 **Server 酱3** 推送到手机 App。
+通过 GitHub Action 每日自动检查指定用户 star 的仓库，**只通知上次检查后新增的 Release**，通过 **Server 酱3** 推送到手机 App。
 
-> 基于 Node.js 原生 fetch，**零外部依赖**，开箱即用。
+> 首次运行回退至 48 小时内；后续只通知增量。基于 Node.js 原生 fetch，**零外部依赖**。
 
 ## 功能
 
@@ -59,33 +59,28 @@ git push -u origin main
 
 **有新 Release 时：**
 ```
-🚀 新 Release 通知 — 2026-06-16 08:00:00
-用户: example-user | 监控: 42 个仓库 | 窗口: 48h
-共发现 3 个新 Release:
+🚀 新 Release 通知 — 2026-06-17 00:07:00
+用户: example-user | 监控: 42 个仓库
+上次检查后新增 3 个 Release:
 
 1. [torvalds/linux](https://github.com/torvalds/linux/releases/tag/v6.12)
    🏷️ v6.12 — Linux Kernel 6.12
-   🕐 2026-06-15T12:00:00Z
+   🕐 2026-06-16T18:30:00Z
 
 2. [facebook/react](https://github.com/facebook/react/releases/tag/v19.2.0)
    🏷️ v19.2.0 — React 19.2.0
-   🕐 2026-06-15T08:30:00Z
+   🕐 2026-06-16T12:15:00Z
 ```
 
 **无新 Release 时：**
 ```
-📭 2026-06-16 08:00:00
-用户 example-user star 的 42 个仓库
-过去 48 小时内无新 Release
+📭 2026-06-17 00:07:00
+用户 example-user star 的 42 个仓库无新增 Release
 ```
 
-## 自定义时间窗口
+## 工作原理
 
-如需修改 48 小时的检查窗口，编辑 `scripts/check_releases.mjs` 中的：
-
-```js
-const CHECK_WINDOW_HOURS = 48; // 改成你想要的小时数
-```
+每次运行后会将当前时间写入 `last_check.txt` 并提交到仓库。下次运行时只检查该时间之后发布的 Release，**不会重复通知**。首次运行无记录时回退至 48 小时内。
 
 ## 项目结构
 
@@ -94,6 +89,7 @@ const CHECK_WINDOW_HOURS = 48; // 改成你想要的小时数
 ├── .github/workflows/daily_release_check.yml  # GitHub Action 工作流
 ├── scripts/check_releases.mjs                  # 核心脚本（Node.js）
 ├── package.json                                # Node.js 项目配置
+├── last_check.txt                              # 上次检查时间（自动维护）
 └── README.md                                   # 本文件
 ```
 

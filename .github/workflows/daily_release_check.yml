@@ -9,6 +9,7 @@ on:
     paths:
       - "scripts/check_releases.mjs"
       - ".github/workflows/daily_release_check.yml"
+      - "last_check.txt"
 
 jobs:
   check-releases:
@@ -31,3 +32,11 @@ jobs:
           SERVER_UID: ${{ secrets.SERVER_UID }}
           SERVER_KEY: ${{ secrets.SERVER_KEY }}
         run: node scripts/check_releases.mjs
+
+      - name: 提交检查时间
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add last_check.txt
+          git diff --staged --quiet || git commit -m "chore: 更新检查时间"
+          git push

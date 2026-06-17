@@ -340,8 +340,8 @@ function formatReleaseMessage(result) {
   const items = [];
   newReleases.forEach((rel, i) => {
     items.push(
-      `${i + 1}. [${rel.repo}](${rel.url})\n` +
-        `   🏷️ ${rel.tag}\n` +
+      `${i + 1}. ${rel.repo}\n` +
+        `   🏷️ [${rel.tag}](${rel.url})\n` +
         `   🕐 ${beijingTime(rel.publishedAt)}`
     );
   });

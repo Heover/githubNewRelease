@@ -59,12 +59,12 @@ SERVER_KEY  = 你的sendkey
 
 **有新 Release 时：**
 ```
-1. [torvalds/linux](https://github.com/torvalds/linux/releases/tag/v6.12)
-   🏷️ v6.12
+1. torvalds/linux
+   🏷️ [v6.12](https://github.com/torvalds/linux/releases/tag/v6.12)
    🕐 2026-06-17 02:30:00
 
-2. [facebook/react](https://github.com/facebook/react/releases/tag/v19.2.0)
-   🏷️ v19.2.0
+2. facebook/react
+   🏷️ [v19.2.0](https://github.com/facebook/react/releases/tag/v19.2.0)
    🕐 2026-06-16 20:15:00
 
 📊 上次检查后新增 2 个 Release | example-user | 监控 42 个仓库 | 2026-06-17 00:07:00
@@ -72,8 +72,8 @@ SERVER_KEY  = 你的sendkey
 
 **push 测试无新增时：**
 ```
-1. [Heover/deepseekRest](https://github.com/Heover/deepseekRest/releases/tag/v1.0.0)
-   🏷️ v1.0.0
+1. Heover/deepseekRest
+   🏷️ [v1.0.0](https://github.com/Heover/deepseekRest/releases/tag/v1.0.0)
    🕐 2026-05-20 10:00:00
 
 📊 🧪 测试模式 — star 仓库最新 Release | Heover | 监控 42 个仓库 | 2026-06-17 12:00:00

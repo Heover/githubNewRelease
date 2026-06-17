@@ -75,6 +75,14 @@ function beijingTimeStr(date = new Date()) {
   return date.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false });
 }
 
+/** 将 ISO 时间转为北京时间 YYYY-MM-DD HH:mm:ss */
+function beijingTime(isoStr) {
+  if (!isoStr) return "";
+  const d = new Date(isoStr);
+  const s = d.toLocaleString("sv-SE", { timeZone: "Asia/Shanghai", hour12: false });
+  return s.replace("T", " ");
+}
+
 /** 安全 fetch 封装 */
 async function safeFetch(url, options = {}) {
   const controller = new AbortController();
@@ -263,7 +271,7 @@ function formatReleaseMessage(result) {
       `${i + 1}. ${rel.repo}\n` +
         `   🏷️ ${rel.tag} — ${rel.name}\n` +
         `   🔗 ${rel.url}\n` +
-        `   🕐 ${rel.published_at}\n`
+        `   🕐 ${beijingTime(rel.publishedAt)}\n`
     );
   });
 

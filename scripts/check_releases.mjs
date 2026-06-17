@@ -264,14 +264,15 @@ function formatReleaseMessage(result) {
     );
   }
 
-  // 正文：具体 Release 在前
+  // 正文：具体 Release 在前，用空行分隔
   const lines = [];
   newReleases.forEach((rel, i) => {
     lines.push(
-      `${i + 1}. ${rel.repo}\n` +
-        `   🏷️ ${rel.tag} — ${rel.name}\n` +
-        `   🔗 ${rel.url}\n` +
-        `   🕐 ${beijingTime(rel.publishedAt)}\n`
+      `${i + 1}. ${rel.repo}`,
+      `   🏷️ ${rel.tag} — ${rel.name}`,
+      `   🔗 ${rel.url}`,
+      `   🕐 ${beijingTime(rel.publishedAt)}`,
+      ""  // 空行分隔
     );
   });
 

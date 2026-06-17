@@ -247,8 +247,8 @@ async function checkAllStarredReleases(cutoff) {
 function formatReleaseMessage(result) {
   if (result.error) {
     return (
-      `⚠️ GitHub Release 监控异常\n` +
-      `用户: ${MONITOR_USER}\n` +
+      `⚠️ GitHub Release 监控异常\n\n` +
+      `用户: ${MONITOR_USER}\n\n` +
       `原因: ${result.error}`
     );
   }
@@ -259,27 +259,26 @@ function formatReleaseMessage(result) {
 
   if (newReleases.length === 0) {
     return (
-      `📭 用户 ${MONITOR_USER} star 的 ${totalStarred} 个仓库无新增 Release\n` +
+      `📭 用户 ${MONITOR_USER} star 的 ${totalStarred} 个仓库无新增 Release\n\n` +
       `⏰ ${checkedAt}`
     );
   }
 
-  // 正文：具体 Release 在前，用空行分隔
-  const lines = [];
+  // 正文：具体 Release 在前，用双换行分隔
+  const items = [];
   newReleases.forEach((rel, i) => {
-    lines.push(
-      `${i + 1}. ${rel.repo}`,
-      `   🏷️ ${rel.tag} — ${rel.name}`,
-      `   🔗 ${rel.url}`,
-      `   🕐 ${beijingTime(rel.publishedAt)}`,
-      ""  // 空行分隔
+    items.push(
+      `${i + 1}. ${rel.repo}\n` +
+        `   🏷️ ${rel.tag} — ${rel.name}\n` +
+        `   🔗 ${rel.url}\n` +
+        `   🕐 ${beijingTime(rel.publishedAt)}`
     );
   });
 
   // 末尾补充摘要
-  lines.push(`📊 上次检查后新增 ${newReleases.length} 个 Release | ${MONITOR_USER} | 监控 ${totalStarred} 个仓库 | ${checkedAt}`);
+  items.push(`\n📊 上次检查后新增 ${newReleases.length} 个 Release | ${MONITOR_USER} | 监控 ${totalStarred} 个仓库 | ${checkedAt}`);
 
-  return lines.join("\n");
+  return items.join("\n\n");
 }
 
 // ============================================================

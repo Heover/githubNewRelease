@@ -251,24 +251,24 @@ function formatReleaseMessage(result) {
 
   if (newReleases.length === 0) {
     return (
-      `📭 ${checkedAt}\n` +
-      `用户 ${MONITOR_USER} star 的 ${totalStarred} 个仓库无新增 Release`
+      `📭 用户 ${MONITOR_USER} star 的 ${totalStarred} 个仓库无新增 Release\n` +
+      `⏰ ${checkedAt}`
     );
   }
 
-  const lines = [
-    `🚀 新 Release 通知 — ${checkedAt}`,
-    `用户: ${MONITOR_USER} | 监控: ${totalStarred} 个仓库`,
-    `上次检查后新增 ${newReleases.length} 个 Release:\n`,
-  ];
-
+  // 正文：具体 Release 在前
+  const lines = [];
   newReleases.forEach((rel, i) => {
     lines.push(
-      `${i + 1}. [${rel.repo}](${rel.url})\n` +
+      `${i + 1}. ${rel.repo}\n` +
         `   🏷️ ${rel.tag} — ${rel.name}\n` +
-        `   🕐 ${rel.publishedAt}\n`
+        `   🔗 ${rel.url}\n` +
+        `   🕐 ${rel.published_at}\n`
     );
   });
+
+  // 末尾补充摘要
+  lines.push(`📊 上次检查后新增 ${newReleases.length} 个 Release | ${MONITOR_USER} | 监控 ${totalStarred} 个仓库 | ${checkedAt}`);
 
   return lines.join("\n");
 }

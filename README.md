@@ -59,23 +59,23 @@ git push -u origin main
 
 **有新 Release 时：**
 ```
-🚀 新 Release 通知 — 2026-06-17 00:07:00
-用户: example-user | 监控: 42 个仓库
-上次检查后新增 3 个 Release:
-
-1. [torvalds/linux](https://github.com/torvalds/linux/releases/tag/v6.12)
+1. torvalds/linux
    🏷️ v6.12 — Linux Kernel 6.12
+   🔗 https://github.com/torvalds/linux/releases/tag/v6.12
    🕐 2026-06-16T18:30:00Z
 
-2. [facebook/react](https://github.com/facebook/react/releases/tag/v19.2.0)
+2. facebook/react
    🏷️ v19.2.0 — React 19.2.0
+   🔗 https://github.com/facebook/react/releases/tag/v19.2.0
    🕐 2026-06-16T12:15:00Z
+
+📊 上次检查后新增 2 个 Release | example-user | 监控 42 个仓库 | 2026-06-17 00:07:00
 ```
 
 **无新 Release 时：**
 ```
-📭 2026-06-17 00:07:00
-用户 example-user star 的 42 个仓库无新增 Release
+📭 用户 example-user star 的 42 个仓库无新增 Release
+⏰ 2026-06-17 00:07:00
 ```
 
 ## 工作原理
